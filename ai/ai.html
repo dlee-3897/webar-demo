@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>MindAR 影片播放互動</title>
+        <!-- 載入 A-Frame 和 MindAR -->
+        <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+        <style>
+            body { margin: 0; overflow: hidden; }
+            #playButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+        </style>
+    </head>
+<body>
+    <button id="playButton">🔊 啟用聲音</button>
+    <a-scene
+        mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: true; filterMinCF: 0.0001; filterBeta: 0.05;"
+        color-space="sRGB"
+        renderer="colorManagement: true; physicallyCorrectLights: true"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+    >
+        <!-- 載入影片資源（要與 HTML 放在同一目錄） -->
+        <a-assets>
+            <video id="introVid" src="viedo.mp4" preload="auto" loop playsinline></video>
+        </a-assets>
+        <!-- 環境光線，避免影片太暗 -->
+        <a-light type="ambient" intensity="1.5"></a-light>
+        <!-- 相機（禁止滑動視角） -->
+        <a-camera look-controls="enabled: false"></a-camera>
+        <!-- 掃描到圖卡後顯示影片 -->
+        <a-entity id="videoAnchor" visible="false">
+            <a-video
+                id="videoEntity"
+                src="#introVid"
+                width="8.8" height="4.78125"
+                scale="0.4 0.4 0.4"
+                autoplay="false"
+                loop="true"
+                material="shader: flat"
+                position="0 0 -2.5">
+            </a-video>
+        </a-entity>
+        <a-entity mindar-image-target="targetIndex: 0" id="markerEntity"></a-entity>
+    </a-scene>
+<!-- 點擊播放 / 暫停的互動邏輯 -->
+        <script>
+            const video = document.querySelector('#introVid');
+            const videoPlane = document.querySelector('#videoEntity');
+            const marker = document.querySelector('#markerEntity');
+            const anchor = document.querySelector('#videoAnchor');
+
+            marker.addEventListener('targetFound', () => {
+            // 顯示影片 anchor
+                anchor.setAttribute('visible', true);
+
+            // 把 marker 的位置與旋轉複製給 anchor
+                const markerPosition = marker.object3D.position;
+                const markerRotation = marker.object3D.rotation;
+
+                anchor.object3D.position.copy(markerPosition);
+                anchor.object3D.rotation.copy(markerRotation);
+
+                // 播放影片
+                video.play();
+            });
+
+            marker.addEventListener('targetLost', () => {
+                video.pause();
+                video.currentTime = 0;
+                anchor.setAttribute('visible', false);
+            });
+
+            // 可選：點擊影片播放 / 暫停
+            videoPlane.addEventListener('click', () => {
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+        </script>
+    </body>
+</html>
